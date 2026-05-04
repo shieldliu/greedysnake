@@ -74,13 +74,6 @@ void show_to_screen(void *buffer, int width, int height)
 #define PLAYGROUND_SIZE 16
 char buffer[PLAYGROUND_SIZE][PLAYGROUND_SIZE];
 
-void display_snake(int x, int y, int food_x, int food_y)
-{
-	memset(buffer, ' ', sizeof(buffer));
-	buffer[y][x]='X';
-	buffer[food_y][food_x]='O';
-	show_to_screen(buffer, PLAYGROUND_SIZE,PLAYGROUND_SIZE);
-}
 
 
 int snake_block_x[PLAYGROUND_SIZE*PLAYGROUND_SIZE];
@@ -88,6 +81,20 @@ int snake_block_y[PLAYGROUND_SIZE*PLAYGROUND_SIZE];
 int snake_lengh;
 int food_pos_x;
 int food_pos_y;
+
+void display_snake()
+{
+	memset(buffer, ' ', sizeof(buffer));
+	for(int i=0; i<snake_lengh; i++)
+	{
+		int x = snake_block_x[i];
+		int y = snake_block_y[i];
+		buffer[y][x] = 'X';
+	}
+	buffer[food_pos_y][food_pos_x]='O';
+	show_to_screen(buffer, PLAYGROUND_SIZE,PLAYGROUND_SIZE);
+}
+
 
 int on_snake(int x, int y)
 {
@@ -121,14 +128,20 @@ void run_snake()
 	snake_block_x[0]=PLAYGROUND_SIZE/2;
 	snake_block_y[0]=PLAYGROUND_SIZE/2;
 
+
 	generate_food_position(&food_pos_x, &food_pos_y);
 
 	//Run snake
 	while (1)
 	{
 		int key;
-		display_snake(snake_block_x[0],snake_block_y[0],food_pos_x, food_pos_y);
+		display_snake();
 		key = getcontrol();
+		for(int i=snake_lengh; i>0; i--)
+		{
+			snake_block_x[i]=snake_block_x[i-1];
+			snake_block_y[i]=snake_block_y[i-1];
+		}
 		switch(key)
 		{
 			case UP: snake_block_y[0]=snake_block_y[0]-1;break;
