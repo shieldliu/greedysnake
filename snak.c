@@ -128,7 +128,6 @@ void run_snake()
 	snake_block_x[0]=PLAYGROUND_SIZE/2;
 	snake_block_y[0]=PLAYGROUND_SIZE/2;
 
-
 	generate_food_position(&food_pos_x, &food_pos_y);
 
 	//Run snake
@@ -153,6 +152,14 @@ void run_snake()
 		if (snake_block_y[0]<0) return;
 		if (snake_block_x[0]>=PLAYGROUND_SIZE) return;
 		if (snake_block_y[0]>=PLAYGROUND_SIZE) return;
+		if ((snake_block_x[0] == food_pos_x) &&
+			 (snake_block_y[0] == food_pos_y))
+		{
+			//Increase snak
+			snake_lengh++;
+			generate_food_position(&food_pos_x, &food_pos_y);
+		}
+		
 	}
 
 }
