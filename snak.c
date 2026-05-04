@@ -126,23 +126,20 @@ void run_snake()
 	//Run snake
 	while (1)
 	{
-		int key = getcontrol();
+		int key;
+		display_snake(snake_block_x[0],snake_block_y[0],food_pos_x, food_pos_y);
+		key = getcontrol();
 		switch(key)
 		{
-			case UP:
-				snake_block_y[0]=snake_block_y[0]-1;
-				break;
-			case DOWN:
-				snake_block_y[0]=snake_block_y[0]+1;
-				break;
-			case LEFT:
-				snake_block_x[0]=snake_block_x[0]-1;
-				break;
-			case RIGHT:
-				snake_block_x[0]=snake_block_x[0]+1;
-				break;
+			case UP: snake_block_y[0]=snake_block_y[0]-1;break;
+			case DOWN:snake_block_y[0]=snake_block_y[0]+1;	break;
+			case LEFT:snake_block_x[0]=snake_block_x[0]-1;	break;
+			case RIGHT:	snake_block_x[0]=snake_block_x[0]+1;break;
 		}
-		display_snake(snake_block_x[0],snake_block_y[0],food_pos_x, food_pos_y);
+		if (snake_block_x[0]<0) return;
+		if (snake_block_y[0]<0) return;
+		if (snake_block_x[0]>=PLAYGROUND_SIZE) return;
+		if (snake_block_y[0]>=PLAYGROUND_SIZE) return;
 	}
 
 }
