@@ -5,6 +5,37 @@
 #include <stdlib.h>
 #include <time.h>
 
+/*
+ * snak.c — 贪吃蛇游戏 (Snake Game)
+ *
+ * 概述：
+ *   一个运行在 Linux 终端中的贪吃蛇游戏，支持 Linux 和 MSDOS 双平台。
+ *   玩家通过 WASD 按键控制蛇的移动方向，目标是吃到食物让蛇身增长。
+ *
+ * 操作方式：
+ *   W/w — 向上移动     A/a — 向左移动
+ *   S/s — 向下移动     D/d — 向右移动
+ *   ESC — 退出游戏
+ *
+ * 游戏规则：
+ *   - 蛇头碰到墙壁（超出游戏区域边界）则游戏结束
+ *   - 蛇头碰到食物（'O'）则蛇身长度 +1 并重新生成食物
+ *   - 每次移动后蛇身自动向前移位一节
+ *
+ * 显示说明：
+ *   - 'X' — 蛇身     'O' — 食物
+ *   - '=' — 上下边框  '|' — 左右边框
+ *
+ * 数据结构：
+ *   - snake_block_x[] / snake_block_y[] — 分别存储蛇身各节的 X/Y 坐标
+ *   - snake_lengh — 当前蛇身长度（初始值为 1）
+ *   - food_pos_x / food_pos_y — 食物在游戏区域中的位置
+ *   - buffer[][] — 16x16 字符缓冲区，用于渲染画面
+ *
+ * 跨平台兼容：
+ *   Linux 下通过 termios 将终端切换为原始模式实现单键输入；
+ *   MSDOS 下通过 conio.h 的 getch() 实现（需定义 MSDOS 宏）。
+ */
 /* 方向键定义 */
 #define UP 1
 #define LEFT 2
@@ -332,3 +363,4 @@ int main(void)
 	srand(time(NULL));  /* 初始化随机数种子，确保每次运行食物位置不同 */
 	run_snake();
 }
+
