@@ -1,30 +1,46 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <termio.h>
+#include <termios.h>
+#include <stdlib.h>
+#include <time.h>
 
 #define UP 1
 #define LEFT 2
 #define DOWN 3
 #define RIGHT 4
+#define MAX_SNAKE_LENGTH (PLAYGROUND_SIZE * PLAYGROUND_SIZE)
 
 int getcontrol(void)
 {
      struct termios tm, tm_old;
      int fd = 0, ch;
 
-     if (tcgetattr(fd, &tm) < 0) {//保存现在的终端设置
+     if (tcgetattr(fd, &tm) < 0) {
           return -1;
      }
 
      tm_old = tm;
-     cfmakeraw(&tm);//更改终端设置为原始模式，该模式下所有的输入数据以字节为单位被处理
-     if (tcsetattr(fd, TCSANOW, &tm) < 0) {//设置上更改之后的设置
+     cfmakeraw(&tm);
+     if (tcsetattr(fd, TCSANOW, &tm) < 0) {
           return -1;
      }
 
      ch = getchar();
-     if (tcsetattr(fd, TCSANOW, &tm_old) < 0) {//更改设置为最初的样子
+     if (ch == 27) { // Escape sequence (arrow keys)
+          getchar(); // skip '['
+          ch = getchar();
+          if (tcsetattr(fd, TCSANOW, &tm_old) < 0) {
+               return -1;
+          }
+          if(ch == 'A') return UP;
+          if(ch == 'B') return DOWN;
+          if(ch == 'C') return RIGHT;
+          if(ch == 'D') return LEFT;
+          return -1;
+     }
+
+     if (tcsetattr(fd, TCSANOW, &tm_old) < 0) {
           return -1;
      }
 
@@ -36,6 +52,7 @@ int getcontrol(void)
 	     return UP;
      if(ch == 'S' || ch =='s')
 	     return DOWN;
+     return -1;
 }
 
 void show_to_screen(void *buffer, int width, int height)
@@ -70,33 +87,39 @@ void show_to_screen(void *buffer, int width, int height)
 
 #define PLAYGROUND_SIZE 32
 char buffer[PLAYGROUND_SIZE][PLAYGROUND_SIZE];
-char snak_body[PLAYGROUND_SIZE^2];
-int snak_length=1;
-struct position food={0,0};
-
-void display_snak(int x, int y)
-{
-	memset(buffer, ' ', sizeof(buffer));
-	buffer[y][x]='X';
-	show_to_screen(buffer, PLAYGROUND_SIZE,PLAYGROUND_SIZE);
-}
 
 struct position
 {
 	int x;
 	int y;
 };
-void display_whole_snak(struct *blocks, int snak_lenth, struct food)
+
+struct position snak_body[PLAYGROUND_SIZE * PLAYGROUND_SIZE];
+int snak_length=1;
+struct position food={0,0};
+
+void display_snak(int x, int y);
+void display_whole_snak(struct position *blocks, int snak_length, struct position food);
+struct position gen_random_food(void);
+
+void display_snak(int x, int y)
 {
 	memset(buffer, ' ', sizeof(buffer));
-	for(int i=0;i<snak_lenth;i++)
+	buffer[y][x]='X';
+	show_to_screen(buffer, PLAYGROUND_SIZE, PLAYGROUND_SIZE);
+}
+
+void display_whole_snak(struct position *blocks, int snak_length, struct position food)
+{
+	memset(buffer, ' ', sizeof(buffer));
+	for(int i=0;i<snak_length;i++)
 	{
 		int x=blocks[i].x;
 		int y = blocks[i].y;
 		buffer[y][x]='X';
 	}
 	buffer[food.y][food.x]='O';
-	show_to_screen(buffer, PLAYGROUND_SIZE,PLAYGROUND_SIZE);
+	show_to_screen(buffer, PLAYGROUND_SIZE, PLAYGROUND_SIZE);
 }
 
 void run_snak()
@@ -104,35 +127,74 @@ void run_snak()
 	snak_length=1;
 	snak_body[0].x=PLAYGROUND_SIZE/2;
 	snak_body[0].y=PLAYGROUND_SIZE/2;
-	//Run snak
+	food = gen_random_food();
+	display_whole_snak(snak_body, snak_length, food);
+
 	while (1)
 	{
 		int key = getcontrol();
-		//First treate the head of snak
-		struct position *head=snak_body;
+		if(key < 0) continue;
+
+		// Save old head position
+		struct position old_head = snak_body[0];
+
+		// Calculate new head position
+		struct position new_head = old_head;
 		switch(key)
 		{
 			case UP:
-				y=y-1;
+				new_head.y = new_head.y - 1;
 				break;
 			case DOWN:
-				y=y+1;
+				new_head.y = new_head.y + 1;
 				break;
 			case LEFT:
-				x=x-1;
+				new_head.x = new_head.x - 1;
 				break;
 			case RIGHT:
-				x=x+1;
+				new_head.x = new_head.x + 1;
 				break;
 		}
-		//update each block to the previous position
-		//then update head postion
-		//check if it eats food
-		//erase the last tail if not eat food
-		//Do not erase tail means it grows
-		//Check if it hit wall or the body, then exit;
-	}
 
+		// Check if hit wall
+		if(new_head.x < 0 || new_head.x >= PLAYGROUND_SIZE ||
+		   new_head.y < 0 || new_head.y >= PLAYGROUND_SIZE)
+			break;
+
+		// Check if hit body
+		for(int i=0; i<snak_length; i++)
+		{
+			if(snak_body[i].x == new_head.x && snak_body[i].y == new_head.y)
+				break;
+		}
+
+		// Move body: shift each block to previous block's position
+		for(int i=snak_length-1; i>=0; i--)
+		{
+			snak_body[i+1] = snak_body[i];
+		}
+		snak_body[0] = new_head;
+
+		// Check if eats food
+		if(new_head.x == food.x && new_head.y == food.y)
+		{
+			snak_length++;
+			food = gen_random_food();
+		}
+
+		// Check if hit body after moving
+		for(int i=1; i<snak_length; i++)
+		{
+			if(snak_body[i].x == new_head.x && snak_body[i].y == new_head.y)
+			{
+				printf("\nGame Over! You hit yourself!\n");
+				return;
+			}
+		}
+
+		display_whole_snak(snak_body, snak_length, food);
+	}
+	printf("\nGame Over! Final length: %d\n", snak_length);
 }
 
 void test_snak()
@@ -171,12 +233,28 @@ void test_snak()
 
 struct position gen_random_food(void)
 {
-	//randomly generate a food and return the position
-	//and loop to generate a new one unless it is not on snak body
-	
+	srand(time(NULL));
+	struct position p;
+	do {
+		p.x = rand() % PLAYGROUND_SIZE;
+		p.y = rand() % PLAYGROUND_SIZE;
+		// Check if food is not on snake body
+		int on_body = 0;
+		for(int i=0; i<snak_length; i++)
+		{
+			if(snak_body[i].x == p.x && snak_body[i].y == p.y)
+			{
+				on_body = 1;
+				break;
+			}
+		}
+		if(!on_body) break;
+	} while(1);
+	return p;
 }
 
-main()
+int main()
 {
 	run_snak();
+	return 0;
 }
