@@ -1,5 +1,6 @@
 #include<stdio.h>
 #include<string.h>
+#include <stdlib.h>
 #ifdef _WIN32
 #include <Windows.h> // For Sleep (milliseconds)
 #else
@@ -10,6 +11,11 @@
 struct position {
 	int x;
 	int y;
+};
+struct SNAKE
+{
+	struct position body[GRIDE_NUMBER * GRIDE_NUMBER];
+	int size;
 };
 
 /*
@@ -36,10 +42,16 @@ int getcontrol(void)
 	return(0);  /* 其他按键忽略 */
 }
 
-void move_snake(struct position* snake)
+void move_snake(struct SNAKE* snake)
 {
 	int direction = getcontrol();
-	struct position p = snake[0];
+	
+	for (int i = snake->size ;i>0 ;i--)
+	{
+		snake->body[i] = snake->body[i-1];
+	}
+
+	struct position p = snake->body[0];
 	switch (direction)
 	{
 	case LEFT:
@@ -63,7 +75,7 @@ void move_snake(struct position* snake)
 	{
 		exit(0);
 	}
-	snake[0] = p;
+	snake->body[0] = p;
 }
 
 void display(int data[GRIDE_NUMBER][GRIDE_NUMBER])
@@ -117,30 +129,80 @@ void refresh(struct position* snake, int length, int map[GRIDE_NUMBER][GRIDE_NUM
 	}
 }
 
-
-struct position layegg(void)
+int check(struct SNAKE snakes, struct position where_egg)
 {
+	int length = snakes.size;
+	struct position* p = snakes.body;
+	for (int i = 0;i < length;i++)
+	{
+		if (where_egg.x == p[i].x &&
+			where_egg.y == p[i].y)
+			return 1;
+	}
+	return 0;
+}
 
+struct position layegg(struct SNAKE reference)
+{
+	struct position pos;
+	int result = 0;
+	do {
+		pos.x = rand() % GRIDE_NUMBER;
+		pos.y = rand() % GRIDE_NUMBER;
+		result = check(reference, pos);
+	} while (result == 1);
+	return pos;
+}
+
+/*
+* 检查蛇的身体是否撞到自己,检查方法是检查头是不是和身体其他部分重叠
+* 
+* 返回值:
+* 1: 有重叠
+* 0: 没有重叠
+*/
+int overlap(struct SNAKE* snake)
+{
+	struct position head = snake->body[0];
+	for(int i = 1; i<snake->size; i++){
+		if (head.x == snake->body[i].x && 
+			head.y == snake->body[i].y )
+		{
+			return 1;
+		}
+	}
+	return 0;
 }
 
 void main()
 {
 	//定义需要用到的变量
 	int MAP[GRIDE_NUMBER][GRIDE_NUMBER];
-	struct position snake[GRIDE_NUMBER * GRIDE_NUMBER];
-	int snake_size;
+	struct SNAKE snake;
 	struct position egg;
 
+	srand(time(NULL));
 	//初始化变量
-	snake_size = 1;
-	snake[0].x = GRIDE_NUMBER / 2;
-	snake[0].y = GRIDE_NUMBER / 2;
-
+	snake.size = 1;
+	snake.body[0].x = GRIDE_NUMBER / 2;
+	snake.body[0].y = GRIDE_NUMBER / 2;
+	//egg = layegg(snake);
+	egg.x = 8; egg.y = 7;
 	while (1)
 	{
-		refresh(snake, snake_size, MAP);
+		refresh(snake.body, snake.size, MAP);
+		MAP[egg.y][egg.x] = 2;
 		display(MAP);
-		move_snake(snake);
+		move_snake(&snake);
+		if (egg.x == snake.body[0].x &&
+			egg.y == snake.body[0].y)
+		{
+			snake.size++;
+			egg = layegg(snake);
+		}
+		if (overlap(&snake) == 1) {
+			exit(0);
+		}
 #ifdef _WIN32
 		Sleep(100);
 #else

@@ -11,7 +11,7 @@ option(MSDOS "Enable MSDOS compatibility mode" OFF)
 # 构建所有游戏的源文件列表
 # 后续添加新游戏时，将源文件名加入此列表即可
 set(GAME_SOURCES
-    snak.c
+    newsnak.c
 )
 
 # 遍历每个源文件，编译为独立可执行文件
@@ -20,7 +20,7 @@ foreach(GAME_SOURCE ${GAME_SOURCES})
     get_filename_component(GAME_NAME ${GAME_SOURCE} NAME_WE)
 
     # 添加可执行文件目标
-    add_executable(${GAME_NAME} ${GAME_SOURCE})
+    add_executable(${GAME_NAME} ${GAME_SOURCE} "newsnak.c")
 
     # 如果启用 MSDOS 模式，定义 MSDOS 宏
     if(MSDOS)
